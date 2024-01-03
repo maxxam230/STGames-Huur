@@ -52,6 +52,10 @@ public class VerhuurdePlot {
             return  daysbetweenpayment;
         }
 
+    public void setDaysbetweenpayment(int daysbetweenpayment) {
+        this.daysbetweenpayment = daysbetweenpayment;
+    }
+
     public boolean hasPayed() { return payed; }
 
     public void setPayed(boolean hasPayed){
