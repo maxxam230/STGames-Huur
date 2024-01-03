@@ -338,7 +338,7 @@ public final class Main extends JavaPlugin {
                 p.sendMessage("§3Prijs: §a" + verhuurdePlot.getPrice());
                 p.sendMessage("§3Betaalt om de §a" + verhuurdePlot.getDaysbetweenpayment() + " §3dagen");
                 p.sendMessage("§3Heeft §a" + verhuurdePlot.getDaysPaymentMissed() + " §3dagen niet betaald");
-                long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.MINUTES.toMillis(verhuurdePlot.getDaysbetweenpayment());
+                long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
                 long timeDifferenceMillis = nextPaymentTimeMillis - currentTimeMillis;
                 long daysRemaining = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
                 long hoursRemaining = TimeUnit.MILLISECONDS.toHours(timeDifferenceMillis) % 24;
