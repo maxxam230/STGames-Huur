@@ -1,0 +1,12 @@
+name: STGames-Huur
+version: '${project.version}'
+main: me.max.stgameshuur.Main
+depend:
+  - WorldGuard
+  - MinetopiaSDB
+  - Vault
+api-version: '1.19'
+commands:
+  huur:
+    description: /huur command
+    permission: stgames.huur
