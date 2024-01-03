@@ -41,7 +41,7 @@ public final class Main extends JavaPlugin {
     public void onEnable() {
         laadVerhuurdePlots();
 
-        getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, 20*30);
+        getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, 20*60*5);
 
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
@@ -114,7 +114,7 @@ public final class Main extends JavaPlugin {
         long currentTimeMillis = System.currentTimeMillis();
         for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             long lastPaymentDate = verhuurdePlot.getLastPaymentDate();
-            long nextPaymentDate = lastPaymentDate + TimeUnit.MINUTES.toMillis(verhuurdePlot.getDaysbetweenpayment());
+            long nextPaymentDate = lastPaymentDate + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
             if (currentTimeMillis >= nextPaymentDate) {
                 if(economy.getBalance(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID())) < verhuurdePlot.getPrice()) {
                     if (playerOnline(verhuurdePlot.getPlayerUUID())) {
@@ -225,7 +225,7 @@ public final class Main extends JavaPlugin {
             UUID playerUUID = verhuurdePlot.getPlayerUUID();
             if (playerUUID.equals(p.getUniqueId())) {
                 foundRentedPlot = true;
-                long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.MINUTES.toMillis(verhuurdePlot.getDaysbetweenpayment());
+                long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
                 long timeDifferenceMillis = nextPaymentTimeMillis - currentTimeMillis;
                 if (timeDifferenceMillis > 0) {
                     long daysRemaining = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
@@ -247,7 +247,7 @@ public final class Main extends JavaPlugin {
 
     public void addVerhuurdePlot(Player p,UUID playerUUID, String plotID, double price, Integer rekeningnummer, Integer dayBetweenPayment) {
         VerhuurdePlot verhuurdePlot = new VerhuurdePlot(playerUUID, plotID, System.currentTimeMillis(), price, rekeningnummer, dayBetweenPayment, false, 0);
-        long nextPaymentDate = System.currentTimeMillis() + TimeUnit.MINUTES.toMinutes(verhuurdePlot.getDaysbetweenpayment());
+        long nextPaymentDate = System.currentTimeMillis() + TimeUnit.DAYS.toMinutes(verhuurdePlot.getDaysbetweenpayment());
         verhuurdePlot.setLastPaymentDate(nextPaymentDate);
         verhuurdePlotList.add(verhuurdePlot);
         saveVerhuurdePlots();
@@ -277,7 +277,7 @@ public final class Main extends JavaPlugin {
         for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             String betaald;
             String playernaam = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
-            long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.MINUTES.toMillis(verhuurdePlot.getDaysbetweenpayment());
+            long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
             long timeDifferenceMillis = nextPaymentTimeMillis - currentTimeMillis;
             if (timeDifferenceMillis > 0) {
                 long days = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
