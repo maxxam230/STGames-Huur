@@ -9,6 +9,10 @@ import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.max.stgameshuur.commands.HuurCommand;
 import me.max.stgameshuur.objects.LaatBetaler;
 import me.max.stgameshuur.objects.VerhuurdePlot;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.milkbowl.vault.economy.Economy;
 import nl.minetopiasdb.api.banking.Bankaccount;
 import org.bukkit.Bukkit;
@@ -33,7 +37,7 @@ public final class Main extends JavaPlugin {
     public static String prefix = "§7[§3§lSTG§bames§7] §r";
     public static String errorprefix = "§7[§c§lSTG§cames§7] §r";
 
-    private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();\
+    private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
     private List<LaatBetaler> laatBetalerList = new ArrayList<>();
 
 
@@ -447,8 +451,12 @@ public final class Main extends JavaPlugin {
                         if (!isPlotOwner(verhuurdePlot)) {
                             LaatBetaler laatBetaler = new LaatBetaler(p,Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()), verhuurdePlot, price);
                             laatBetalerList.add(laatBetaler);
-                            p.sendMessage(prefix+"§aDe speler moet nu de achterstands betaling accepteren");
+                            p.sendMessage(prefix+"§aDe speler moet nu de achterstands betaling bevestigen");
                             p.sendMessage(prefix+"§aDe extra kosten zijn: §b" + price + ",-");
+                            TextComponent message = new TextComponent(prefix+"§3Klik hier om de huur betaling te bevestigen");
+                            message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/huur bevestig"));
+                            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§aBevestig huur betaling prijs: §b" + price + ",-").create()));
+                            p.spigot().sendMessage(message);
                         }
                     } else {
                         p.sendMessage(errorprefix + "§cDe huurder is nog steeds eigenaar en heeft geen achterstand");
@@ -480,5 +488,17 @@ public final class Main extends JavaPlugin {
                 }
             }
         }
+    }
+
+    public boolean moetconfirmen(Player p){
+        if(laatBetalerList.isEmpty()){
+            return false;
+        }
+        for(LaatBetaler laatBetaler : laatBetalerList){
+            if(laatBetaler.getPhuurder().getUniqueId().equals(p.getUniqueId())){
+                return true;
+            }
+        }
+        return false;
     }
 }

@@ -142,11 +142,11 @@ public class HuurCommand implements TabExecutor {
                         } else {
                             p.sendMessage(errorprefix+"§cJe hebt hiet geen permissie voor!");
                         }
-                    } else if(args[0].equalsIgnoreCase("confirm")){
-                        if(plugin.confirmbetaalachterstand.containsKey(p.getUniqueId())){
+                    } else if(args[0].equalsIgnoreCase("bevestig")){
+                        if(moetconfirmen(p)){
                             plugin.confirmedbetaalachterstand(p);
                         } else {
-                            p.sendMessage(errorprefix+"§cJe hebt niks om te confirmeren");
+                            p.sendMessage(errorprefix+"§cJe hebt niks om te bevestigen");
                         }
                     }
                 } else {
@@ -157,7 +157,9 @@ public class HuurCommand implements TabExecutor {
         return false;
     }
 
-
+    public boolean moetconfirmen(Player p){
+        return plugin.moetconfirmen(p);
+    }
 
 
     public void helpmenu(Player p) {
@@ -170,6 +172,7 @@ public class HuurCommand implements TabExecutor {
         p.sendMessage("§b/huur vraaghuur [speler]");
         p.sendMessage("§b/huur debug §8§o(gebruik dit alleen om te testen)");
         p.sendMessage("§b/huur forcepay §8§o(gebruik dit alleen om te testen)");
+        p.sendMessage("§b/huur bevestig §8§o(kan alleen als je meer dan 2 dagen gemist hebt)");
     }
 
     @Override

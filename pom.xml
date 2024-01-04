@@ -6,7 +6,7 @@
 
     <groupId>me.max</groupId>
     <artifactId>STGames-Huur</artifactId>
-    <version>0.1</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <name>STGames-Huur</name>
