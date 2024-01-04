@@ -7,6 +7,7 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.max.stgameshuur.commands.HuurCommand;
+import me.max.stgameshuur.objects.LaatBetaler;
 import me.max.stgameshuur.objects.VerhuurdePlot;
 import net.milkbowl.vault.economy.Economy;
 import nl.minetopiasdb.api.banking.Bankaccount;
@@ -32,9 +33,9 @@ public final class Main extends JavaPlugin {
     public static String prefix = "§7[§3§lSTG§bames§7] §r";
     public static String errorprefix = "§7[§c§lSTG§cames§7] §r";
 
-    private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
+    private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();\
+    private List<LaatBetaler> laatBetalerList = new ArrayList<>();
 
-    public HashMap<UUID,Double> confirmbetaalachterstand = new HashMap<>();
 
     public Economy economy;
 
@@ -385,19 +386,6 @@ public final class Main extends JavaPlugin {
         return Bukkit.getOfflinePlayer(playerUUID).isOnline();
     }
 
-    public ItemStack createBookContract(VerhuurdePlot verhuurdePlot) {
-        ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
-        BookMeta bookMeta = (BookMeta) book.getItemMeta();
-        bookMeta.setTitle("Huurcontract van: " + verhuurdePlot.getPlotID());
-        bookMeta.setAuthor(prefix);
-        bookMeta.addPage("Huur contract van plot: " + verhuurdePlot.getPlotID() + "\n"
-                + "Prijs van plot: " + verhuurdePlot.getPrice() + "\n"
-                + "Dagen tussen betaling: " + verhuurdePlot.getDaysbetweenpayment() + "\n"
-                + "Verhuurd aan: " + Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName());
-        book.setItemMeta(bookMeta);
-        return book;
-    }
-
     public void huurbetaalforce() {
         if (debug()) {
             Bukkit.getServer().broadcastMessage(debugprefix + "Huur betaling zijn geforceert gecontroleert");
@@ -457,8 +445,10 @@ public final class Main extends JavaPlugin {
                 if (economy.getBalance(Bukkit.getOfflinePlayer(playername)) >= price) {
                     if (verhuurdePlot.getDaysPaymentMissed() >= 2) {
                         if (!isPlotOwner(verhuurdePlot)) {
-                            confirmbetaalachterstand.put(huurder.getUniqueId(),price);
+                            LaatBetaler laatBetaler = new LaatBetaler(p,Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()), verhuurdePlot, price);
+                            laatBetalerList.add(laatBetaler);
                             p.sendMessage(prefix+"§aDe speler moet nu de achterstands betaling accepteren");
+                            p.sendMessage(prefix+"§aDe extra kosten zijn: §b" + price + ",-");
                         }
                     } else {
                         p.sendMessage(errorprefix + "§cDe huurder is nog steeds eigenaar en heeft geen achterstand");
@@ -474,16 +464,20 @@ public final class Main extends JavaPlugin {
         long currentTimeMillis = System.currentTimeMillis();
         for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             if (verhuurdePlot.getPlayerUUID().equals(huurder.getUniqueId())) {
-                verhuurdePlot.setPayed(true);
-                verhuurdePlot.setDaysPaymentMissed(0);
-                Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
-                bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
-                economy.withdrawPlayer(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()), confirmbetaalachterstand.get(huurder.getUniqueId()));
-                huurder.sendMessage(prefix + "§aJe hebt " + confirmbetaalachterstand.get(huurder.getUniqueId()) + ",- huur betaald voor plot: " + verhuurdePlot.getPlotID());
-                verhuurdePlot.setLastPaymentDate(currentTimeMillis);
-                addPlotMember(verhuurdePlot);
-                confirmbetaalachterstand.remove(huurder.getUniqueId());
-                Bukkit.getServer().broadcastMessage(prefix+"§aHeeft de huur te laat betaald(dit wordt beter)");
+                for(LaatBetaler laatBetaler : laatBetalerList){
+                    if(laatBetaler.getPhuurder().equals(huurder)){
+                        verhuurdePlot.setPayed(true);
+                        verhuurdePlot.setDaysPaymentMissed(0);
+                        Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
+                        bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
+                        economy.withdrawPlayer(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()), laatBetaler.getLaatprijs());
+                        huurder.sendMessage(prefix + "§aJe hebt " + laatBetaler.getLaatprijs() + ",- huur betaald voor plot: " + verhuurdePlot.getPlotID());
+                        verhuurdePlot.setLastPaymentDate(currentTimeMillis);
+                        addPlotMember(verhuurdePlot);
+                        laatBetalerList.remove(laatBetaler);
+                        laatBetaler.getPgemeente().sendMessage(prefix + "§a" + huurder.getName() + "Heeft zijn huur hersteld");
+                    }
+                }
             }
         }
     }
