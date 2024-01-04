@@ -124,6 +124,30 @@ public class HuurCommand implements TabExecutor {
                         if (p.isOp()) {
                             plugin.huurbetaalforce();
                         }
+                    } else if (args[0].equalsIgnoreCase("vraaghuur")){
+                        if(p.hasPermission("stgames.huur.vraaghuur")){
+                            if(args.length < 2){
+                                p.sendMessage(errorprefix+"§c/huur vraaghuur [speler]");
+                                return true;
+                            }
+                            if(args[1].equalsIgnoreCase(p.getName())){
+                                p.sendMessage(errorprefix + "§cJe kan niet jezelf huur laten betalen");
+                                return true;
+                            }
+                            if (Bukkit.getPlayer(args[1]) != null && Bukkit.getPlayer(args[1]).isOnline()) {
+                                plugin.betaalachterstand(p,args[1]);
+                            } else {
+                                p.sendMessage(errorprefix + "§cDeze speler bestaat niet of is niet online");
+                            }
+                        } else {
+                            p.sendMessage(errorprefix+"§cJe hebt hiet geen permissie voor!");
+                        }
+                    } else if(args[0].equalsIgnoreCase("confirm")){
+                        if(plugin.confirmbetaalachterstand.containsKey(p.getUniqueId())){
+                            plugin.confirmedbetaalachterstand(p);
+                        } else {
+                            p.sendMessage(errorprefix+"§cJe hebt niks om te confirmeren");
+                        }
                     }
                 } else {
                     p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor");
@@ -143,6 +167,7 @@ public class HuurCommand implements TabExecutor {
         p.sendMessage("§b/huur info [plot-ID]");
         p.sendMessage("§b/huur timeremaining");
         p.sendMessage("§b/huur list");
+        p.sendMessage("§b/huur vraaghuur [speler]");
         p.sendMessage("§b/huur debug §8§o(gebruik dit alleen om te testen)");
         p.sendMessage("§b/huur forcepay §8§o(gebruik dit alleen om te testen)");
     }
@@ -166,6 +191,9 @@ public class HuurCommand implements TabExecutor {
             }
             if(p.hasPermission("stgames.huur.list")){
                 list.add("list");
+            }
+            if(p.hasPermission("stgames.huur.vraaghuur")){
+                list.add("vraaghuur");
             }
             return list;
         }
@@ -202,11 +230,20 @@ public class HuurCommand implements TabExecutor {
             return plugin.returnLoadedVerhuurdePlots();
         } else if(args[0].equalsIgnoreCase("info")){
             return plugin.returnLoadedVerhuurdePlots();
+        } else if(args[0].equalsIgnoreCase("vraaghuur")){
+            return onlinespeler();
         }
 
         return null;
     }
 
+    public List<String> onlinespeler(){
+        List<String> list = new ArrayList<>();
+        for(Player p : Bukkit.getOnlinePlayers()){
+            list.add(p.getName());
+        }
+        return list;
+    }
 
     public List<String> plotsinworld(Player p){
         List<String> list = new ArrayList<>();

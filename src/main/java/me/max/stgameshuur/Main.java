@@ -21,6 +21,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +34,8 @@ public final class Main extends JavaPlugin {
 
     private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
 
+    public HashMap<UUID,Double> confirmbetaalachterstand = new HashMap<>();
+
     public Economy economy;
 
 
@@ -40,11 +43,10 @@ public final class Main extends JavaPlugin {
     public void onEnable() {
         laadVerhuurdePlots();
 
-        getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, 20*30);
+        getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, 20 * 30);
 
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
-
 
 
         //Config
@@ -65,9 +67,11 @@ public final class Main extends JavaPlugin {
         saveVerhuurdePlots();
     }
 
-    public boolean debug(){
+    public boolean debug() {
         return getConfig().getBoolean("debug");
-    };
+    }
+
+    ;
 
     private void saveVerhuurdePlots() {
         Bukkit.getConsoleSender().sendMessage(prefix + "Saving verhuurde plots...");
@@ -109,7 +113,7 @@ public final class Main extends JavaPlugin {
     }
 
     private void huurbetaal() {
-        if(debug()){
+        if (debug()) {
             Bukkit.getServer().broadcastMessage(debugprefix + "Huur betaling zijn gecontroleerd");
         }
         Bukkit.getConsoleSender().sendMessage(prefix + "§aHuur betaal check is uitgevoerd");
@@ -117,23 +121,23 @@ public final class Main extends JavaPlugin {
         for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             long nextPaymentDate = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
             if (currentTimeMillis >= nextPaymentDate) {
-                if(economy.getBalance(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID())) < verhuurdePlot.getPrice()) {
+                if (economy.getBalance(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID())) < verhuurdePlot.getPrice()) {
                     if (playerOnline(verhuurdePlot.getPlayerUUID())) {
                         Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(errorprefix + "§cJe had niet genoeg geld om de huur te betalen voor plot: " + verhuurdePlot.getPlotID());
                     }
-                    if(debug()){
+                    if (debug()) {
                         String playername = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
-                        Bukkit.getServer().broadcastMessage(debugprefix + playername +" Kon de huur niet betalen en loopt nu " + (verhuurdePlot.getDaysPaymentMissed()+1) + " dagen achter");
+                        Bukkit.getServer().broadcastMessage(debugprefix + playername + " Kon de huur niet betalen en loopt nu " + (verhuurdePlot.getDaysPaymentMissed() + 1) + " dagen achter");
                     }
                     verhuurdePlot.setDaysPaymentMissed(verhuurdePlot.getDaysPaymentMissed() + 1);
                     verhuurdePlot.setPayed(false);
                     if (verhuurdePlot.getDaysPaymentMissed() >= 2) {
-                        if(isPlotOwner(verhuurdePlot)){
+                        if (isPlotOwner(verhuurdePlot)) {
                             removePlotMember(verhuurdePlot);
                         }
-                        if(debug()){
+                        if (debug()) {
                             String playername = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
-                            Bukkit.getServer().broadcastMessage(debugprefix + playername +" Heeft 2x niet de huur betaald en is verwijderd als plot eigenaar");
+                            Bukkit.getServer().broadcastMessage(debugprefix + playername + " Heeft 2x niet de huur betaald en is verwijderd als plot eigenaar");
                         }
                         if (playerOnline(verhuurdePlot.getPlayerUUID()) && isPlotOwner(verhuurdePlot)) {
                             Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(errorprefix + "§cJe hebt 2 keer je huur niet betaald voor plot: " + verhuurdePlot.getPlotID());
@@ -145,13 +149,13 @@ public final class Main extends JavaPlugin {
                     Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
                     bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
                     economy.withdrawPlayer(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()), verhuurdePlot.getPrice());
-                    if(isPlotOwner(verhuurdePlot)){
+                    if (!isPlotOwner(verhuurdePlot)) {
                         addPlotMember(verhuurdePlot);
                     }
-                    if(debug()){
+                    if (debug()) {
                         String playername = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
-                        Bukkit.getServer().broadcastMessage(debugprefix + playername +" Heeft de huur betaald voor plot: " + verhuurdePlot.getPlotID());
-                        Bukkit.getServer().broadcastMessage(debugprefix + "En er is "+ verhuurdePlot.getPrice() + ",- toegevoeg op de rekeninnummer " + verhuurdePlot.getBanknumber());
+                        Bukkit.getServer().broadcastMessage(debugprefix + playername + " Heeft de huur betaald voor plot: " + verhuurdePlot.getPlotID());
+                        Bukkit.getServer().broadcastMessage(debugprefix + "En er is " + verhuurdePlot.getPrice() + ",- toegevoeg op de rekeninnummer " + verhuurdePlot.getBanknumber());
                     }
                     if (playerOnline(verhuurdePlot.getPlayerUUID())) {
                         Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(prefix + "§aJe hebt " + verhuurdePlot.getPrice() + ",- huur betaald voor plot: " + verhuurdePlot.getPlotID());
@@ -167,15 +171,17 @@ public final class Main extends JavaPlugin {
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
         for (World world1 : world) {
             RegionManager regionManager = container.get(BukkitAdapter.adapt(world1));
-            if(regionManager.getRegions().isEmpty()){break;}
+            if (regionManager.getRegions().isEmpty()) {
+                break;
+            }
             if (regionManager.hasRegion(verhuurdePlot.getPlotID())) {
                 ProtectedRegion region = regionManager.getRegion(verhuurdePlot.getPlotID());
                 DefaultDomain owners = region.getOwners();
                 owners.addPlayer(verhuurdePlot.getPlayerUUID());
                 region.setOwners(owners);
-                if(debug()){
+                if (debug()) {
                     String playername = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
-                    Bukkit.getServer().broadcastMessage(debugprefix + playername +" Is nu toegevoegd als eigenaar aan plot: "+verhuurdePlot.getPlotID());
+                    Bukkit.getServer().broadcastMessage(debugprefix + playername + " Is nu toegevoegd als eigenaar aan plot: " + verhuurdePlot.getPlotID());
                 }
             } else {
                 Bukkit.getConsoleSender().sendMessage(errorprefix + "§cProbeerde speler toe te voegen aan een plot dat niet bestaat");
@@ -186,13 +192,15 @@ public final class Main extends JavaPlugin {
     public void removePlotMember(VerhuurdePlot verhuurdePlot) {
         List<World> world = Bukkit.getServer().getWorlds();
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        for(World world1 : world){
+        for (World world1 : world) {
             RegionManager regionManager = container.get(BukkitAdapter.adapt(world1));
-            if(regionManager.getRegions().isEmpty()){break;}
+            if (regionManager.getRegions().isEmpty()) {
+                break;
+            }
             if (regionManager.hasRegion(verhuurdePlot.getPlotID())) {
                 ProtectedRegion region = regionManager.getRegion(verhuurdePlot.getPlotID());
                 DefaultDomain owners = region.getOwners();
-                if(owners.contains(verhuurdePlot.getPlayerUUID())) {
+                if (owners.contains(verhuurdePlot.getPlayerUUID())) {
                     owners.removePlayer(verhuurdePlot.getPlayerUUID());
                     region.setOwners(owners);
                     if (debug()) {
@@ -204,16 +212,18 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    public boolean isPlotOwner(VerhuurdePlot verhuurdePlot){
+    public boolean isPlotOwner(VerhuurdePlot verhuurdePlot) {
         List<World> world = Bukkit.getServer().getWorlds();
         RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        for(World world1 : world){
+        for (World world1 : world) {
             RegionManager regionManager = container.get(BukkitAdapter.adapt(world1));
-            if(regionManager.getRegions().isEmpty()){break;}
+            if (regionManager.getRegions().isEmpty()) {
+                break;
+            }
             if (regionManager.hasRegion(verhuurdePlot.getPlotID())) {
                 ProtectedRegion region = regionManager.getRegion(verhuurdePlot.getPlotID());
                 DefaultDomain owners = region.getOwners();
-                if(owners.contains(verhuurdePlot.getPlayerUUID())) {
+                if (owners.contains(verhuurdePlot.getPlayerUUID())) {
                     return true;
                 }
             }
@@ -229,7 +239,7 @@ public final class Main extends JavaPlugin {
             if (playerUUID.equals(p.getUniqueId())) {
                 foundRentedPlot = true;
                 long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
-                long timeDifferenceMillis = (nextPaymentTimeMillis - currentTimeMillis) - TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
+                long timeDifferenceMillis = (nextPaymentTimeMillis - currentTimeMillis);
                 if (timeDifferenceMillis > 0) {
                     long daysRemaining = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
                     long hoursRemaining = TimeUnit.MILLISECONDS.toHours(timeDifferenceMillis) % 24;
@@ -248,8 +258,8 @@ public final class Main extends JavaPlugin {
     }
 
 
-    public void addVerhuurdePlot(Player p,UUID playerUUID, String plotID, double price, Integer rekeningnummer, Integer dayBetweenPayment) {
-        if(economy.getBalance(Bukkit.getOfflinePlayer(playerUUID)) < price){
+    public void addVerhuurdePlot(Player p, UUID playerUUID, String plotID, double price, Integer rekeningnummer, Integer dayBetweenPayment) {
+        if (economy.getBalance(Bukkit.getOfflinePlayer(playerUUID)) < price) {
             p.sendMessage(errorprefix + "§c§o" + Bukkit.getOfflinePlayer(playerUUID).getName() + " §r§cHeeft nu het geld niet en de huur is niet aangemaakt!");
             return;
         }
@@ -262,17 +272,17 @@ public final class Main extends JavaPlugin {
         bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
         addPlotMember(verhuurdePlot);
         p.sendMessage(prefix + "§bHuur contract toegevoegd met deze info: ");
-        if(economy.getBalance(Bukkit.getOfflinePlayer(playerUUID)) < price){
+        if (economy.getBalance(Bukkit.getOfflinePlayer(playerUUID)) < price) {
             Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(errorprefix + "§cJe had niet genoeg geld om de huur te betalen voor plot: " + verhuurdePlot.getPlotID());
             verhuurdePlot.setDaysPaymentMissed(1);
         } else {
             economy.withdrawPlayer(Bukkit.getOfflinePlayer(playerUUID), price);
             verhuurdePlot.setDaysPaymentMissed(0);
-            Bukkit.getPlayer(playerUUID).sendMessage(prefix+"§bJe hebt "+price+".- huur betaald voor plot: "+ plotID);
+            Bukkit.getPlayer(playerUUID).sendMessage(prefix + "§bJe hebt " + price + ".- huur betaald voor plot: " + plotID);
             verhuurdePlot.setPayed(true);
         }
-        verhuurdePlot.setLastPaymentDate(nextPaymentDate);
-        sendPlotInfo(plotID,p);
+        verhuurdePlot.setLastPaymentDate(System.currentTimeMillis());
+        sendPlotInfo(plotID, p);
 
     }
 
@@ -287,20 +297,18 @@ public final class Main extends JavaPlugin {
             String betaald;
             String playernaam = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
             long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
-            long timeDifferenceMillis = (nextPaymentTimeMillis - currentTimeMillis) - TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
-            if (timeDifferenceMillis > 0) {
-                long days = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
-                long hours = TimeUnit.MILLISECONDS.toHours(timeDifferenceMillis) % 24;
-                long minutes = TimeUnit.MILLISECONDS.toMinutes(timeDifferenceMillis) % 60;
-                long seconds = TimeUnit.MILLISECONDS.toSeconds(timeDifferenceMillis) % 60;
-                String timeRemaining = String.format("%dD:%dH:%dM:%dS", days, hours, minutes, seconds);
-                if (verhuurdePlot.hasPayed()) {
-                    betaald = "Betaald";
-                    p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + timeRemaining);
-                } else {
-                    betaald = "Onbetaald";
-                    p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + verhuurdePlot.getDaysPaymentMissed() + " §b|§c " + timeRemaining);
-                }
+            long timeDifferenceMillis = (nextPaymentTimeMillis - currentTimeMillis);
+            long days = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
+            long hours = TimeUnit.MILLISECONDS.toHours(timeDifferenceMillis) % 24;
+            long minutes = TimeUnit.MILLISECONDS.toMinutes(timeDifferenceMillis) % 60;
+            long seconds = TimeUnit.MILLISECONDS.toSeconds(timeDifferenceMillis) % 60;
+            String timeRemaining = String.format("%dD:%dH:%dM:%dS", days, hours, minutes, seconds);
+            if (verhuurdePlot.hasPayed()) {
+                betaald = "Betaald";
+                p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + timeRemaining);
+            } else {
+                betaald = "Onbetaald";
+                p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + verhuurdePlot.getDaysPaymentMissed() + " §b|§c " + timeRemaining);
             }
         }
     }
@@ -315,9 +323,9 @@ public final class Main extends JavaPlugin {
                     saveConfig(); // Save changes to the configuration file
                     plotsToRemove.add(verhuurdePlot);
                     removePlotMember(verhuurdePlot);
-                    p.sendMessage(prefix +"§6"+ plotID + " §aHuur contract verwijderd");
+                    p.sendMessage(prefix + "§6" + plotID + " §aHuur contract verwijderd");
                 } else {
-                    p.sendMessage(prefix +"§6"+ plotID + " §aHuur contract niet gevonden");
+                    p.sendMessage(prefix + "§6" + plotID + " §aHuur contract niet gevonden");
                 }
             } else {
                 p.sendMessage(errorprefix + "§cDit is niet een verhuurd plot!");
@@ -327,12 +335,12 @@ public final class Main extends JavaPlugin {
     }
 
 
-    public void sendPlotInfo(String plotID, Player p){
+    public void sendPlotInfo(String plotID, Player p) {
         long currentTimeMillis = System.currentTimeMillis();
-        for(VerhuurdePlot verhuurdePlot : verhuurdePlotList){
-            if(verhuurdePlot.getPlotID().equals(plotID)){
+        for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
+            if (verhuurdePlot.getPlotID().equals(plotID)) {
                 String betaald;
-                if(verhuurdePlot.hasPayed()){
+                if (verhuurdePlot.hasPayed()) {
                     betaald = "§aBetaald";
                 } else {
                     betaald = "§cOnbetaald";
@@ -343,12 +351,20 @@ public final class Main extends JavaPlugin {
                 p.sendMessage("§3Prijs: §a" + verhuurdePlot.getPrice());
                 p.sendMessage("§3Betaalt om de §a" + verhuurdePlot.getDaysbetweenpayment() + " §3dagen");
                 p.sendMessage("§3Heeft §a" + verhuurdePlot.getDaysPaymentMissed() + " §3dagen niet betaald");
+
                 long nextPaymentTimeMillis = verhuurdePlot.getLastPaymentDate() + TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
-                long timeDifferenceMillis = (nextPaymentTimeMillis - currentTimeMillis) - TimeUnit.DAYS.toMillis(verhuurdePlot.getDaysbetweenpayment());
+                long timeDifferenceMillis = (nextPaymentTimeMillis - currentTimeMillis);
                 long daysRemaining = TimeUnit.MILLISECONDS.toDays(timeDifferenceMillis);
                 long hoursRemaining = TimeUnit.MILLISECONDS.toHours(timeDifferenceMillis) % 24;
                 long minutesRemaining = TimeUnit.MILLISECONDS.toMinutes(timeDifferenceMillis) % 60;
                 long secondsRemaining = TimeUnit.MILLISECONDS.toSeconds(timeDifferenceMillis) % 60;
+
+                Bukkit.getConsoleSender().sendMessage(prefix + "Plot: " + verhuurdePlot.getPlotID() +
+                        ", Current Time: " + currentTimeMillis +
+                        ", Last Payment Date: " + verhuurdePlot.getLastPaymentDate() +
+                        ", Next Payment Date: " + nextPaymentTimeMillis +
+                        ", Days Between Payment: " + verhuurdePlot.getDaysbetweenpayment() +
+                        ", Days Between Payment In Mili: " + TimeUnit.MINUTES.toMillis(verhuurdePlot.getDaysbetweenpayment()));
 
                 p.sendMessage("§3Tijd tot volgende betaling: §a" + daysRemaining + " dagen, " + hoursRemaining + " uur, " + minutesRemaining + " minuten, " + secondsRemaining + " seconden");
             } else {
@@ -357,36 +373,36 @@ public final class Main extends JavaPlugin {
         }
     }
 
-    public List<String> returnLoadedVerhuurdePlots(){
+    public List<String> returnLoadedVerhuurdePlots() {
         List<String> list = new ArrayList<>();
-        for(VerhuurdePlot verhuurdePlot : verhuurdePlotList){
+        for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             list.add(verhuurdePlot.getPlotID());
         }
         return list;
     }
 
-    private boolean playerOnline(UUID playerUUID){
+    private boolean playerOnline(UUID playerUUID) {
         return Bukkit.getOfflinePlayer(playerUUID).isOnline();
     }
 
-    public ItemStack createBookContract(VerhuurdePlot verhuurdePlot){
+    public ItemStack createBookContract(VerhuurdePlot verhuurdePlot) {
         ItemStack book = new ItemStack(Material.WRITTEN_BOOK);
         BookMeta bookMeta = (BookMeta) book.getItemMeta();
         bookMeta.setTitle("Huurcontract van: " + verhuurdePlot.getPlotID());
         bookMeta.setAuthor(prefix);
         bookMeta.addPage("Huur contract van plot: " + verhuurdePlot.getPlotID() + "\n"
-        + "Prijs van plot: " + verhuurdePlot.getPrice() + "\n"
-        + "Dagen tussen betaling: " + verhuurdePlot.getDaysbetweenpayment() + "\n"
-        + "Verhuurd aan: " + Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName());
+                + "Prijs van plot: " + verhuurdePlot.getPrice() + "\n"
+                + "Dagen tussen betaling: " + verhuurdePlot.getDaysbetweenpayment() + "\n"
+                + "Verhuurd aan: " + Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName());
         book.setItemMeta(bookMeta);
         return book;
     }
 
     public void huurbetaalforce() {
-        if(debug()){
+        if (debug()) {
             Bukkit.getServer().broadcastMessage(debugprefix + "Huur betaling zijn geforceert gecontroleert");
         }
-        Bukkit.getServer().broadcastMessage(prefix+"§aHuur betaling zijn geforceert gecontroleert");
+        Bukkit.getServer().broadcastMessage(prefix + "§aHuur betaling zijn geforceert gecontroleert");
         long currentTimeMillis = System.currentTimeMillis();
         for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             if (economy.getBalance(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID())) < verhuurdePlot.getPrice()) {
@@ -416,7 +432,7 @@ public final class Main extends JavaPlugin {
                 Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
                 bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
                 economy.withdrawPlayer(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()), verhuurdePlot.getPrice());
-                if (isPlotOwner(verhuurdePlot)) {
+                if (!isPlotOwner(verhuurdePlot)) {
                     addPlotMember(verhuurdePlot);
                 }
                 if (debug()) {
@@ -432,5 +448,43 @@ public final class Main extends JavaPlugin {
         }
     }
 
+    public void betaalachterstand(Player p, String playername) {
+        long currentTimeMillis = System.currentTimeMillis();
+        Player huurder = Bukkit.getPlayer(playername);
+        for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
+            if (verhuurdePlot.getPlayerUUID().equals(huurder.getUniqueId())) {
+                double price = (((double) verhuurdePlot.getDaysPaymentMissed() /verhuurdePlot.getDaysbetweenpayment()) * verhuurdePlot.getPrice());
+                if (economy.getBalance(Bukkit.getOfflinePlayer(playername)) >= price) {
+                    if (verhuurdePlot.getDaysPaymentMissed() >= 2) {
+                        if (!isPlotOwner(verhuurdePlot)) {
+                            confirmbetaalachterstand.put(huurder.getUniqueId(),price);
+                            p.sendMessage(prefix+"§aDe speler moet nu de achterstands betaling accepteren");
+                        }
+                    } else {
+                        p.sendMessage(errorprefix + "§cDe huurder is nog steeds eigenaar en heeft geen achterstand");
+                    }
+                } else {
+                    p.sendMessage(errorprefix + "§cDe huurder heeft niet genoeg geld om te betalen.");
+                }
+            }
+        }
+    }
 
+    public void confirmedbetaalachterstand(Player huurder){
+        long currentTimeMillis = System.currentTimeMillis();
+        for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
+            if (verhuurdePlot.getPlayerUUID().equals(huurder.getUniqueId())) {
+                verhuurdePlot.setPayed(true);
+                verhuurdePlot.setDaysPaymentMissed(0);
+                Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
+                bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
+                economy.withdrawPlayer(Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()), confirmbetaalachterstand.get(huurder.getUniqueId()));
+                huurder.sendMessage(prefix + "§aJe hebt " + confirmbetaalachterstand.get(huurder.getUniqueId()) + ",- huur betaald voor plot: " + verhuurdePlot.getPlotID());
+                verhuurdePlot.setLastPaymentDate(currentTimeMillis);
+                addPlotMember(verhuurdePlot);
+                confirmbetaalachterstand.remove(huurder.getUniqueId());
+                Bukkit.getServer().broadcastMessage(prefix+"§aHeeft de huur te laat betaald(dit wordt beter)");
+            }
+        }
+    }
 }
