@@ -41,7 +41,7 @@ public final class Main extends JavaPlugin {
     public void onEnable() {
         laadVerhuurdePlots();
 
-        getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, 20 * 30);
+        getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, (20*60)*5);
 
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
