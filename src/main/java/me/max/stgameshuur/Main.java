@@ -69,7 +69,7 @@ public final class Main extends JavaPlugin {
         return getConfig().getBoolean("debug");
     }
 
-    ;
+
 
     private void saveVerhuurdePlots() {
         Bukkit.getConsoleSender().sendMessage(prefix + "Saving verhuurde plots...");
