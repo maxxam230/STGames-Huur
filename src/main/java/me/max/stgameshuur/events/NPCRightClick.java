@@ -1,6 +1,7 @@
 package me.max.stgameshuur.events;
 
 import me.max.stgameshuur.Main;
+import me.max.stgameshuur.menu.CategorienMenu;
 import net.citizensnpcs.api.event.NPCRightClickEvent;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.event.EventHandler;
@@ -20,7 +21,7 @@ public class NPCRightClick implements Listener {
     @EventHandler
     public void npcclick(NPCRightClickEvent event){
         if(plugin.npcIDs.contains(event.getNPC().getId())){
-
+            new CategorienMenu(plugin.categorien,event.getClicker(),1);
         }
     }
 

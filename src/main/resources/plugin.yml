@@ -11,3 +11,6 @@ commands:
   huur:
     description: /huur command
     permission: stgames.huur
+  categorie:
+    description: /categorie command
+    permission: stgames.categorie

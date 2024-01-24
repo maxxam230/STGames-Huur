@@ -2,6 +2,7 @@ package me.max.stgameshuur.commands;
 
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.util.Location;
+import com.sk89q.worldguard.LocalPlayer;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
@@ -88,7 +89,7 @@ public class HuurCommand implements TabExecutor {
                             FileConfiguration categorieconfig = CategorienConfig.getCategorienfileconfig();
                             if(!categorieconfig.contains("categorien." + args[1].toLowerCase())){
                                 plugin.categorien.add(args[1].toLowerCase());
-                                categorieconfig.set("categorien." + args[1].toLowerCase(), Material.NAME_TAG.toString());
+                                categorieconfig.set("categorien." + args[1].toLowerCase(), plugin.categorien);
                                 CategorienConfig.save();
                             } else {
                                 p.sendMessage(errorprefix+"§cDeze categorie bestaat al!");
@@ -180,7 +181,7 @@ public class HuurCommand implements TabExecutor {
                             p.sendMessage(errorprefix + "Er zijn geen categorien geladen!");
                             return true;
                         }
-                        new CategorienMenu(plugin.categorien,p,1,45);
+                        new CategorienMenu(plugin.categorien,p,1);
                     } else if (args[0].equalsIgnoreCase("npc")) {
                         if(args.length < 2){
                             p.sendMessage(errorprefix + "§c/huur npc add/remove [NPC-ID]");
@@ -339,7 +340,9 @@ public class HuurCommand implements TabExecutor {
             return null;
         }
         for (com.sk89q.worldguard.protection.regions.ProtectedRegion region : regionManager.getRegions().values()) {
-            list.add(region.getId());
+            if(region.getOwners().contains(p.getUniqueId())){
+                list.add(region.getId());
+            }
         }
         return list;
     }

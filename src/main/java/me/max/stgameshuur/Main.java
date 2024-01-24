@@ -6,9 +6,12 @@ import com.sk89q.worldguard.domains.DefaultDomain;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
+import me.max.stgameshuur.commands.CategorieCommand;
 import me.max.stgameshuur.commands.HuurCommand;
 import me.max.stgameshuur.configs.CategorienConfig;
+import me.max.stgameshuur.configs.VerhuurdePlotsConfig;
 import me.max.stgameshuur.events.InvClickEvent;
+import me.max.stgameshuur.events.NPCRightClick;
 import me.max.stgameshuur.objects.VerhuurdePlot;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -51,15 +54,17 @@ public final class Main extends JavaPlugin {
 
         //Events
         Bukkit.getPluginManager().registerEvents(new InvClickEvent(this), this);
-        //Bukkit.getPluginManager().registerEvents(new ArmorStandRemove(this), this);
+        Bukkit.getPluginManager().registerEvents(new NPCRightClick(this), this);
 
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
+        getCommand("categorie").setExecutor(new CategorieCommand(this));
 
 
         //Config
         loadNpcIdsToList();
         CategorienConfig.createCategorienConfig();
+        VerhuurdePlotsConfig.createCategorienConfig();
         getConfig().set("debug", false);
         saveConfig();
 

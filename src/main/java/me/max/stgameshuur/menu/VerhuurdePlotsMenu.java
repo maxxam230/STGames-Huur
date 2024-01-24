@@ -4,7 +4,6 @@ import me.arcaniax.hdb.api.HeadDatabaseAPI;
 import me.max.stgameshuur.menu.utils.PageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -12,25 +11,31 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 
-public class CategorienMenu {
+public class VerhuurdePlotsMenu {
 
 
-    public CategorienMenu(ArrayList<String> categorien, Player p, int page){
-        if(categorien.isEmpty()){
+    public VerhuurdePlotsMenu(ArrayList<String> categorien, Player p, String categorie){
+        if(categorien.isEmpty() && p.hasPermission("stgames.huur.categorie."+categorie+".add")){
+            p.openInventory(emptyPage(categorie));
             return;
         }
 
+        int page = 1;
         int spaces = 45;
 
         ArrayList<ItemStack> allcategorien = new ArrayList<>();
 
         for(String cat : categorien){
             if(p.hasPermission("stgames.huur.categorie." + cat)) {
-                allcategorien.add(nit(cat));
+                //allcategorien.add(nit(cat));
             }
         }
 
-        Inventory inv = Bukkit.createInventory(null,54,"§6Huur Categorien §7§o- " + page);
+        Inventory inv = Bukkit.createInventory(null,54,"§6Verhuurdeplots §7§o- §r§7" + categorie);
+        if(categorien.isEmpty()){
+            p.openInventory(inv);
+            return;
+        }
 
         ItemStack left;
         ItemMeta leftMeta;
@@ -68,10 +73,25 @@ public class CategorienMenu {
         p.openInventory(inv);
     }
 
-    private ItemStack nit(String name){
-        ItemStack item = new ItemStack(Material.NAME_TAG);
+
+    private Inventory emptyPage(String categorie){
+        Inventory inv = Bukkit.createInventory(null,54,"§6Verhuurdeplots §7§o- §r§7" + categorie);
+        inv.setItem(45,nit(Material.BARRIER,"§c§LLeft", 0,null));
+        inv.setItem(49,nit(Material.RABBIT_FOOT, "§a§lAdd Huur",173,categorie));
+        inv.setItem(53,nit(Material.BARRIER,"§c§LLeft", 0,null));
+        return inv;
+    }
+
+    private ItemStack nit(Material mat, String name, int modeldata, String localizedname){
+        ItemStack item = new ItemStack(mat);
         ItemMeta itemm = item.getItemMeta();
-        itemm.setDisplayName("§b§l"+name);
+        itemm.setDisplayName(name);
+        if(!(modeldata == 0)){
+            itemm.setCustomModelData(modeldata);
+        }
+        if(!(localizedname == null)) {
+            itemm.setLocalizedName(localizedname);
+        }
         item.setItemMeta(itemm);
         return item;
     }
