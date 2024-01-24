@@ -7,6 +7,8 @@ import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.max.stgameshuur.commands.HuurCommand;
+import me.max.stgameshuur.configs.CategorienConfig;
+import me.max.stgameshuur.events.InvClickEvent;
 import me.max.stgameshuur.objects.VerhuurdePlot;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -17,7 +19,9 @@ import nl.minetopiasdb.api.banking.Bankaccount;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -26,13 +30,15 @@ import java.util.concurrent.TimeUnit;
 
 public final class Main extends JavaPlugin {
 
-    public static String debugprefix = "§7[§3§lDeb§bug§7] §8§o";
-    public static String prefix = "§7[§3§lSTG§bames§7] §r";
-    public static String errorprefix = "§7[§c§lSTG§cames§7] §r";
+    public static final String debugprefix = "§7[§3§lDeb§bug§7] §8§o";
+    public static final String prefix = "§7[§3§lSTG§bames§7] §r";
+    public static final String errorprefix = "§7[§c§lSTG§cames§7] §r";
 
     private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
     private HashMap<UUID,UUID> laatBetalerList = new HashMap<>();
 
+    public ArrayList<String> categorien = new ArrayList<>();
+    public ArrayList<Integer> npcIDs = new ArrayList<>();
 
     public Economy economy;
 
@@ -43,13 +49,22 @@ public final class Main extends JavaPlugin {
 
         getServer().getScheduler().runTaskTimer(this, this::huurbetaal, 0, (20*60)*5);
 
+        //Events
+        Bukkit.getPluginManager().registerEvents(new InvClickEvent(this), this);
+        //Bukkit.getPluginManager().registerEvents(new ArmorStandRemove(this), this);
+
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
 
 
         //Config
+        loadNpcIdsToList();
+        CategorienConfig.createCategorienConfig();
         getConfig().set("debug", false);
         saveConfig();
+
+        //Categorien
+        loadCategorien();
 
         //Economy Api
         if (Bukkit.getPluginManager().getPlugin("Vault") != null) {
@@ -63,13 +78,25 @@ public final class Main extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         saveVerhuurdePlots();
+        saveNpcIdsToConfig();
     }
 
     public boolean debug() {
         return getConfig().getBoolean("debug");
     }
 
+    private void loadNpcIdsToList(){
+        if(getConfig().contains("npcIDS")){
+            this.npcIDs = (ArrayList<Integer>) getConfig().getIntegerList("npcIDS");
+        }
+    }
 
+    private void saveNpcIdsToConfig(){
+        if(!npcIDs.isEmpty()) {
+            getConfig().set("npcIDS", this.npcIDs);
+            saveConfig();
+        }
+    }
 
     private void saveVerhuurdePlots() {
         Bukkit.getConsoleSender().sendMessage(prefix + "Saving verhuurde plots...");
@@ -477,6 +504,14 @@ public final class Main extends JavaPlugin {
                 }
             }
         }
+    }
+
+    private void loadCategorien(){
+        FileConfiguration categorieconfig = CategorienConfig.getCategorienfileconfig();
+        if(!categorieconfig.contains("categorien")){
+            return;
+        }
+        categorien.addAll(categorieconfig.getConfigurationSection("categorien").getKeys(false));
     }
 
 

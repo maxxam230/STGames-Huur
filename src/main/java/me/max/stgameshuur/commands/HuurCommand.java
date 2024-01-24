@@ -6,13 +6,21 @@ import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.max.stgameshuur.Main;
+import me.max.stgameshuur.configs.CategorienConfig;
+import me.max.stgameshuur.menu.CategorienMenu;
+import net.citizensnpcs.api.CitizensAPI;
+import net.citizensnpcs.api.npc.NPC;
+import net.citizensnpcs.api.npc.NPCDataStore;
+import net.citizensnpcs.api.npc.NPCRegistry;
 import nl.minetopiasdb.api.banking.Bankaccount;
 import nl.minetopiasdb.api.enums.BankAccountType;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -67,6 +75,23 @@ public class HuurCommand implements TabExecutor {
                                 plugin.addVerhuurdePlot(p, playerUUID, args[2], Double.parseDouble(args[3]), Integer.parseInt(args[5]), Integer.parseInt(args[4]));
                             } else {
                                 p.sendMessage(errorprefix + "§cSpeler is niet online");
+                            }
+                        } else {
+                            p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
+                        }
+                    } else if (args[0].equalsIgnoreCase("maakcategorie")) {
+                        if (p.hasPermission("stgames.huur.maakcategorie")) {
+                            if(args.length != 2){
+                                p.sendMessage("§b/huur maakcategorie [naam]");
+                                return true;
+                            }
+                            FileConfiguration categorieconfig = CategorienConfig.getCategorienfileconfig();
+                            if(!categorieconfig.contains("categorien." + args[1].toLowerCase())){
+                                plugin.categorien.add(args[1].toLowerCase());
+                                categorieconfig.set("categorien." + args[1].toLowerCase(), Material.NAME_TAG.toString());
+                                CategorienConfig.save();
+                            } else {
+                                p.sendMessage(errorprefix+"§cDeze categorie bestaat al!");
                             }
                         } else {
                             p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
@@ -142,6 +167,54 @@ public class HuurCommand implements TabExecutor {
                         } else {
                             p.sendMessage(errorprefix+"§cJe hebt niks om te bevestigen");
                         }
+                    } else if(args[0].equalsIgnoreCase("categorien")){
+                        if(plugin.categorien.isEmpty()){
+                            p.sendMessage(errorprefix + "§cEr zijn geen categorien geladen");
+                            return true;
+                        }
+                        for(String cat :  plugin.categorien) {
+                            p.sendMessage(cat);
+                        }
+                    } else if(args[0].equalsIgnoreCase("showcategorien")){
+                        if(plugin.categorien.isEmpty()){
+                            p.sendMessage(errorprefix + "Er zijn geen categorien geladen!");
+                            return true;
+                        }
+                        new CategorienMenu(plugin.categorien,p,1,45);
+                    } else if (args[0].equalsIgnoreCase("npc")) {
+                        if(args.length < 2){
+                            p.sendMessage(errorprefix + "§c/huur npc add/remove [NPC-ID]");
+                            return true;
+                        }
+                        if(args[1].equalsIgnoreCase("add")){
+                            if(args.length < 3){
+                                p.sendMessage(errorprefix + "§c/huur npc add [NPC-ID]");
+                                return true;
+                            }
+                            try {
+                                Integer npcid = Integer.parseInt(args[2]);
+                                plugin.npcIDs.add(npcid);
+                                p.sendMessage(prefix + "§anpc met id: " + npcid + " toegevoegd");
+                            }catch (Exception e){
+                                p.sendMessage(errorprefix + "§cSorry dat is geen nummer!");
+                            }
+                        } else if(args[1].equalsIgnoreCase("remove")){
+                            if(args.length < 3){
+                                p.sendMessage(errorprefix + "§c/huur npc remove [NPC-ID]");
+                                return true;
+                            }
+                            try {
+                                Integer npcid = Integer.parseInt(args[2]);
+                                if(plugin.npcIDs.contains(npcid)){
+                                    plugin.npcIDs.remove(npcid);
+                                    p.sendMessage(prefix + "§anpc met id: " + npcid + " verwijderd");
+                                } else {
+                                    p.sendMessage(prefix + "§cnpc met id: " + npcid + " is niet een huur npc");
+                                }
+                            }catch (Exception e){
+                                p.sendMessage(errorprefix + "§cSorry dat is geen nummer!");
+                            }
+                        }
                     }
                 } else {
                     p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor");
@@ -158,6 +231,7 @@ public class HuurCommand implements TabExecutor {
 
     public void helpmenu(Player p) {
         p.sendMessage(prefix);
+        p.sendMessage("§b/huur npc add/remove [NPC-ID]");
         p.sendMessage("§b/huur add [speler] [plot] [bedrag] [dagen] [rekening-ID]");
         p.sendMessage("§b/huur remove [plot-ID]");
         p.sendMessage("§b/huur info [plot-ID]");
@@ -174,8 +248,14 @@ public class HuurCommand implements TabExecutor {
         Player p = (Player) sender;
         if (args.length == 1) {
             List<String> list = new ArrayList<>();
+            if(p.hasPermission("stgames.huur.npc")){
+                list.add("npc");
+            }
             if(p.hasPermission("stgames.huur.add")){
                 list.add("add");
+            }
+            if(p.hasPermission("stgames.huur.info")){
+                list.add("maakcategorie");
             }
             if(p.hasPermission("stgames.huur.remove")){
                 list.add("remove");
@@ -194,6 +274,14 @@ public class HuurCommand implements TabExecutor {
             }
             return list;
         }
+        if(args[0].equalsIgnoreCase("npc")) {
+            if(args.length == 2) {
+                List<String> list = new ArrayList<>();
+                list.add("add");
+                list.add("remove");
+                return list;
+            }
+        }
         if(args[0].equalsIgnoreCase("add")) {
             if (args.length == 2) {
                 List<String> list = new ArrayList<>();
@@ -202,7 +290,6 @@ public class HuurCommand implements TabExecutor {
                 }
                 return list;
             }
-
             if (args.length == 3) {
                 return plotsinworld(p);
             }

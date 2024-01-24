@@ -5,6 +5,7 @@ depend:
   - WorldGuard
   - MinetopiaSDB
   - Vault
+  - Citizens
 api-version: '1.19'
 commands:
   huur:
