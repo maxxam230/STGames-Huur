@@ -80,23 +80,6 @@ public class HuurCommand implements TabExecutor {
                         } else {
                             p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
                         }
-                    } else if (args[0].equalsIgnoreCase("maakcategorie")) {
-                        if (p.hasPermission("stgames.huur.maakcategorie")) {
-                            if(args.length != 2){
-                                p.sendMessage("§b/huur maakcategorie [naam]");
-                                return true;
-                            }
-                            FileConfiguration categorieconfig = CategorienConfig.getCategorienfileconfig();
-                            if(!categorieconfig.contains("categorien." + args[1].toLowerCase())){
-                                plugin.categorien.add(args[1].toLowerCase());
-                                categorieconfig.set("categorien." + args[1].toLowerCase(), plugin.categorien);
-                                CategorienConfig.save();
-                            } else {
-                                p.sendMessage(errorprefix+"§cDeze categorie bestaat al!");
-                            }
-                        } else {
-                            p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
-                        }
                     } else if (args[0].equalsIgnoreCase("list")) {
                         if (p.hasPermission("stgames.huur.add")) {
                             plugin.stuurLoadedVerhuurdePlots(p);
@@ -168,20 +151,6 @@ public class HuurCommand implements TabExecutor {
                         } else {
                             p.sendMessage(errorprefix+"§cJe hebt niks om te bevestigen");
                         }
-                    } else if(args[0].equalsIgnoreCase("categorien")){
-                        if(plugin.categorien.isEmpty()){
-                            p.sendMessage(errorprefix + "§cEr zijn geen categorien geladen");
-                            return true;
-                        }
-                        for(String cat :  plugin.categorien) {
-                            p.sendMessage(cat);
-                        }
-                    } else if(args[0].equalsIgnoreCase("showcategorien")){
-                        if(plugin.categorien.isEmpty()){
-                            p.sendMessage(errorprefix + "Er zijn geen categorien geladen!");
-                            return true;
-                        }
-                        new CategorienMenu(plugin.categorien,p,1);
                     } else if (args[0].equalsIgnoreCase("npc")) {
                         if(args.length < 2){
                             p.sendMessage(errorprefix + "§c/huur npc add/remove [NPC-ID]");
@@ -194,6 +163,7 @@ public class HuurCommand implements TabExecutor {
                             }
                             try {
                                 Integer npcid = Integer.parseInt(args[2]);
+                                if(plugin.npcIDs.contains(npcid)){p.sendMessage(errorprefix+"§cDeze npc is al toegevoegd"); return true;}
                                 plugin.npcIDs.add(npcid);
                                 p.sendMessage(prefix + "§anpc met id: " + npcid + " toegevoegd");
                             }catch (Exception e){

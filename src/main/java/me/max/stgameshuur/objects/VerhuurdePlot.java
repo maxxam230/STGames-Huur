@@ -11,6 +11,7 @@ public class VerhuurdePlot {
         private int daysbetweenpayment;
         private int daysPaymentMissed;
         private boolean payed;
+        private String category;
 
 
         public VerhuurdePlot(UUID playerUUID, String plotID, long lastPaymentDate, double price, int banknumber, int daysbetweenpayment, boolean payed, int dayspaymentmissed) {
@@ -22,6 +23,7 @@ public class VerhuurdePlot {
             this.daysbetweenpayment = daysbetweenpayment;
             this.payed = payed;
             this.daysPaymentMissed = dayspaymentmissed;
+            this.category = category;
         }
 
     public void setLastPaymentDate(long lastPaymentDate) {

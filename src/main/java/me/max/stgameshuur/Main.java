@@ -8,10 +8,14 @@ import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.max.stgameshuur.commands.CategorieCommand;
 import me.max.stgameshuur.commands.HuurCommand;
+import me.max.stgameshuur.commands.HuurplotCommand;
 import me.max.stgameshuur.configs.CategorienConfig;
+import me.max.stgameshuur.configs.SpelerverhuurplotsConfig;
 import me.max.stgameshuur.configs.VerhuurdePlotsConfig;
 import me.max.stgameshuur.events.InvClickEvent;
 import me.max.stgameshuur.events.NPCRightClick;
+import me.max.stgameshuur.objects.AddVerhuurPlot;
+import me.max.stgameshuur.objects.HuurCategory;
 import me.max.stgameshuur.objects.VerhuurdePlot;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -40,7 +44,9 @@ public final class Main extends JavaPlugin {
     private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
     private HashMap<UUID,UUID> laatBetalerList = new HashMap<>();
 
-    public ArrayList<String> categorien = new ArrayList<>();
+    public HashMap<UUID, AddVerhuurPlot> addingplot = new HashMap<>();
+
+    public ArrayList<HuurCategory> categorien = new ArrayList<>();
     public ArrayList<Integer> npcIDs = new ArrayList<>();
 
     public Economy economy;
@@ -58,11 +64,13 @@ public final class Main extends JavaPlugin {
 
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
+        getCommand("huurplot").setExecutor(new HuurplotCommand(this));
         getCommand("categorie").setExecutor(new CategorieCommand(this));
 
 
         //Config
         loadNpcIdsToList();
+        SpelerverhuurplotsConfig.createCategorienConfig();
         CategorienConfig.createCategorienConfig();
         VerhuurdePlotsConfig.createCategorienConfig();
         getConfig().set("debug", false);
@@ -83,6 +91,7 @@ public final class Main extends JavaPlugin {
     public void onDisable() {
         // Plugin shutdown logic
         saveVerhuurdePlots();
+        saveCategorien();
         saveNpcIdsToConfig();
     }
 
@@ -516,7 +525,18 @@ public final class Main extends JavaPlugin {
         if(!categorieconfig.contains("categorien")){
             return;
         }
-        categorien.addAll(categorieconfig.getConfigurationSection("categorien").getKeys(false));
+        for(String s : categorieconfig.getConfigurationSection("categorien").getKeys(false)){
+            this.categorien.add(new HuurCategory(s,categorieconfig.getInt("categorien."+s)));
+        }
+    }
+
+    public void saveCategorien(){
+        FileConfiguration categorieconfig = CategorienConfig.getCategorienfileconfig();
+        if(categorien.isEmpty()){categorieconfig.set("categorien",null); CategorienConfig.save(); return;}
+        for(HuurCategory category : categorien){
+            categorieconfig.set("categorien."+category.getCategory(), category.getBankid());
+        }
+        CategorienConfig.save();
     }
 
 

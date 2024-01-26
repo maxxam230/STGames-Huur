@@ -5,40 +5,35 @@ import me.max.stgameshuur.Main;
 import me.max.stgameshuur.menu.utils.PageUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.entity.Item;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
 
-public class CategorienMenu {
+public class PlayerSelectMenu {
 
     private final String prefix = Main.prefix;
     private final String errorprefix = Main.errorprefix;
 
-    public CategorienMenu(ArrayList<String> categorien, Player p, int page){
-        if(categorien == null){
-            p.sendMessage(errorprefix+"§cEr zijn geen categorien ingesteld!");
-            return;
-        }
+    public PlayerSelectMenu(Player p, int page, String plotname){
 
         int spaces = 45;
 
-        ArrayList<ItemStack> allcategorien = new ArrayList<>();
+        ArrayList<ItemStack> allOnlinePlayers = new ArrayList<>();
 
-        for(String cat : categorien){
-            if(p.hasPermission("stgames.huur.categorie." + cat)) {
-                allcategorien.add(nit(cat));
-            }
+        for(Player allp : Bukkit.getOnlinePlayers()){
+            allOnlinePlayers.add(nit(allp.getName()));
         }
 
-        Inventory inv = Bukkit.createInventory(null,54,"§6Huur Categorien §7§o- " + page);
+        Inventory inv = Bukkit.createInventory(null,54,"§6Kies speler voor plot: §7§o- " + page);
 
         ItemStack left;
         ItemMeta leftMeta;
-        if(PageUtil.isPageValid(allcategorien,page-1,spaces)){
+        if(PageUtil.isPageValid(allOnlinePlayers,page-1,spaces)){
             left = new HeadDatabaseAPI().getItemHead("60738");
             leftMeta = left.getItemMeta();
             leftMeta.setDisplayName("§a§lLeft");
@@ -53,7 +48,7 @@ public class CategorienMenu {
 
         ItemStack right;
         ItemMeta rightMeta;
-        if(PageUtil.isPageValid(allcategorien,page+1,spaces)){
+        if(PageUtil.isPageValid(allOnlinePlayers,page+1,spaces)){
             right = new HeadDatabaseAPI().getItemHead("60740");
             rightMeta = right.getItemMeta();
             rightMeta.setDisplayName("§a§lRight");
@@ -65,7 +60,7 @@ public class CategorienMenu {
         right.setItemMeta(rightMeta);
         inv.setItem(53,right);
 
-        for(ItemStack is : PageUtil.getPageItems(allcategorien,page,spaces)){
+        for(ItemStack is : PageUtil.getPageItems(allOnlinePlayers,page,spaces)){
             inv.setItem(inv.firstEmpty(),is);
         }
 
@@ -73,8 +68,9 @@ public class CategorienMenu {
     }
 
     private ItemStack nit(String name){
-        ItemStack item = new ItemStack(Material.NAME_TAG);
-        ItemMeta itemm = item.getItemMeta();
+        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta itemm = (SkullMeta) item.getItemMeta();
+        itemm.setOwningPlayer(Bukkit.getOfflinePlayer(name));
         itemm.setDisplayName("§b§l"+name);
         item.setItemMeta(itemm);
         return item;
