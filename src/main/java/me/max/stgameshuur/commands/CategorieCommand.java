@@ -38,35 +38,60 @@ public class CategorieCommand implements TabExecutor {
                         return true;
                     }
                 }
-                if(args[0].equalsIgnoreCase("add")){
-                    if(!p.hasPermission("stgames.categorie.add")){noPerms(p); return true;};
-                    if(args.length<3){helpmenu(p); return true;}
-                    if(isCategory(args[1])){p.sendMessage(errorprefix+"§cDeze categorie bestaat al"); return true;}
+                if (args[0].equalsIgnoreCase("add")) {
+                    if (!p.hasPermission("stgames.categorie.add")) {
+                        noPerms(p);
+                        return true;
+                    }
+                    if (args.length < 3) {
+                        helpmenu(p);
+                        return true;
+                    }
+                    if (isCategory(args[1])) {
+                        p.sendMessage(errorprefix + "§cDeze categorie bestaat al");
+                        return true;
+                    }
                     int rekeningid = 0;
                     try {
                         rekeningid = Integer.parseInt(args[2]);
-                    }catch (Exception e){
-                        p.sendMessage(errorprefix+"§cDat is geen nummer!");
+                    } catch (Exception e) {
+                        p.sendMessage(errorprefix + "§cDat is geen nummer!");
+                        return true;
+                    }
+                    if(!isBankId(rekeningid)){
+                        p.sendMessage(errorprefix + "§cDit is niet een geldig rekening-ID");
                         return true;
                     }
                     plugin.categorien.add(new HuurCategory(args[1], rekeningid));
                     plugin.saveCategorien();
-                    p.sendMessage(prefix+"§aCategorie: §o"+args[1].toLowerCase()+" §aToegevoegd");
+                    p.sendMessage(prefix + "§aCategorie: §o" + args[1].toLowerCase() + " §aToegevoegd");
                 } else if (args[0].equalsIgnoreCase("remove")) {
-                    if(!p.hasPermission("stgames.categorie.remove")){noPerms(p); return true;};
-                    if(args.length<2){helpmenu(p); return true;}
-                    if(!isCategory(args[1])){p.sendMessage(errorprefix+"§cDeze categorie bestaat niet"); return true;}
+                    if (!p.hasPermission("stgames.categorie.remove")) {
+                        noPerms(p);
+                        return true;
+                    }
+                    if (args.length < 2) {
+                        helpmenu(p);
+                        return true;
+                    }
+                    if (!isCategory(args[1])) {
+                        p.sendMessage(errorprefix + "§cDeze categorie bestaat niet");
+                        return true;
+                    }
                     removeCategory(args[1]);
                     plugin.saveCategorien();
-                    p.sendMessage(prefix+"§aCategorie: §o"+args[1].toLowerCase()+" §aVerwijderd!");
-                } else if(args[0].equalsIgnoreCase("list")){
-                    if(!p.hasPermission("stgames.categorie.remove")){noPerms(p); return true;};
-                    if(plugin.categorien.isEmpty()){
-                        p.sendMessage(errorprefix+"§cEr zijn geen categorien geladen!");
+                    p.sendMessage(prefix + "§aCategorie: §o" + args[1].toLowerCase() + " §aVerwijderd!");
+                } else if (args[0].equalsIgnoreCase("list")) {
+                    if (!p.hasPermission("stgames.categorie.remove")) {
+                        noPerms(p);
+                        return true;
+                    }
+                    if (plugin.categorien.isEmpty()) {
+                        p.sendMessage(errorprefix + "§cEr zijn geen categorien geladen!");
                     } else {
                         p.sendMessage(prefix + "§9- Categorien:");
                         for (HuurCategory huurCategory : plugin.categorien) {
-                            p.sendMessage("§b"+huurCategory.getCategory() + ": " + huurCategory.getBankid());
+                            p.sendMessage("§b" + huurCategory.getCategory() + ": " + huurCategory.getBankid());
                         }
                     }
                 }
@@ -75,16 +100,20 @@ public class CategorieCommand implements TabExecutor {
         return false;
     }
 
-    private boolean isCategory(String category){
-        if(plugin.categorien.isEmpty()){return false;}
-        for(HuurCategory huurCategory : plugin.categorien){
+    private boolean isCategory(String category) {
+        if (plugin.categorien.isEmpty()) {
+            return false;
+        }
+        for (HuurCategory huurCategory : plugin.categorien) {
             return huurCategory.getCategory().equals(category);
         }
         return false;
     }
 
-    private void removeCategory(String category){
-        if(plugin.categorien.isEmpty()){return;}
+    private void removeCategory(String category) {
+        if (plugin.categorien.isEmpty()) {
+            return;
+        }
         Iterator<HuurCategory> iterator = plugin.categorien.iterator();
         while (iterator.hasNext()) {
             HuurCategory obj = iterator.next();
@@ -95,8 +124,8 @@ public class CategorieCommand implements TabExecutor {
         }
     }
 
-    private void noPerms(Player p){
-        p.sendMessage(errorprefix+"§cJe hebt hier geen permissie voor.");
+    private void noPerms(Player p) {
+        p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor.");
     }
 
     private void helpmenu(Player p) {
@@ -109,45 +138,55 @@ public class CategorieCommand implements TabExecutor {
     @Override
     public @Nullable List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command, @NotNull String label, @NotNull String[] args) {
         Player p = (Player) sender;
-        if(args.length == 1){
+        if (args.length == 1) {
             List<String> list = new ArrayList<>();
-            if(p.hasPermission("stgames.categorie.add")){
+            if (p.hasPermission("stgames.categorie.add")) {
                 list.add("add");
             }
-            if(p.hasPermission("stgames.categorie.remove")){
+            if (p.hasPermission("stgames.categorie.remove")) {
                 list.add("remove");
             }
-            if(p.hasPermission("stgames.categorie.list")){
+            if (p.hasPermission("stgames.categorie.list")) {
                 list.add("list");
             }
             return list;
         }
 
-        if(args.length == 2){
-            if(args[0].equalsIgnoreCase("remove")){
+        if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("remove")) {
                 FileConfiguration categorieconfig = CategorienConfig.getCategorienfileconfig();
-                if(!categorieconfig.contains("categorien")){
+                if (!categorieconfig.contains("categorien")) {
                     return null;
                 }
                 return new ArrayList<>(categorieconfig.getConfigurationSection("categorien").getKeys(false));
             }
-            if(args[0].equalsIgnoreCase("add")){
+            if (args[0].equalsIgnoreCase("add")) {
                 return Collections.singletonList("categorie_naam");
             }
         }
-        if(args.length == 3){
-            if(args[0].equalsIgnoreCase("remove")){
-                List<Bankaccount> accounts = nl.minetopiasdb.api.banking.BankUtils.getInstance().getAccounts();
-                List<String> accountnmbrs = new ArrayList<>();
+        if (args.length > 2) {
+            if (args[0].equalsIgnoreCase("add")) {
+                List<String> accountNumbers = new ArrayList<>();
+                List<Bankaccount> accounts = nl.minetopiasdb.api.banking.BankUtils.getInstance().getAccounts(BankAccountType.BUSINESS);
+                accounts.addAll(nl.minetopiasdb.api.banking.BankUtils.getInstance().getAccounts(BankAccountType.GOVERNMENT));
                 for (Bankaccount account : accounts) {
-                    if(!(account.getType() == BankAccountType.PERSONAL) || !(account.getType() == BankAccountType.SAVINGS)) {
-                        accountnmbrs.add(String.valueOf(account.getId()));
-                    }
+                    accountNumbers.add(String.valueOf(account.getId()));
                 }
-                return accountnmbrs;
+                return accountNumbers;
             }
         }
         return null;
+    }
+
+    private boolean isBankId(Integer id){
+        List<Bankaccount> accounts = nl.minetopiasdb.api.banking.BankUtils.getInstance().getAccounts(BankAccountType.BUSINESS);
+        accounts.addAll(nl.minetopiasdb.api.banking.BankUtils.getInstance().getAccounts(BankAccountType.GOVERNMENT));
+        for (Bankaccount account : accounts) {
+            if(account.getId() == id){
+                return true;
+            }
+        }
+        return false;
     }
 
 

@@ -14,6 +14,7 @@ import me.max.stgameshuur.configs.SpelerverhuurplotsConfig;
 import me.max.stgameshuur.configs.VerhuurdePlotsConfig;
 import me.max.stgameshuur.events.InvClickEvent;
 import me.max.stgameshuur.events.NPCRightClick;
+import me.max.stgameshuur.events.SendChat;
 import me.max.stgameshuur.objects.AddVerhuurPlot;
 import me.max.stgameshuur.objects.HuurCategory;
 import me.max.stgameshuur.objects.VerhuurdePlot;
@@ -41,10 +42,13 @@ public final class Main extends JavaPlugin {
     public static final String prefix = "§7[§3§lSTG§bames§7] §r";
     public static final String errorprefix = "§7[§c§lSTG§cames§7] §r";
 
-    private List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
-    private HashMap<UUID,UUID> laatBetalerList = new HashMap<>();
+    public List<VerhuurdePlot> verhuurdePlotList = new ArrayList<>();
+    public HashMap<UUID,UUID> laatBetalerList = new HashMap<>();
 
+    public HashMap<UUID, VerhuurdePlot> confirmhuurcontract = new HashMap<>();
     public HashMap<UUID, AddVerhuurPlot> addingplot = new HashMap<>();
+    public HashMap<UUID, VerhuurdePlot> setpriceforplot = new HashMap<>();
+    public HashMap<UUID, Integer> addingtimeordays = new HashMap<>();
 
     public ArrayList<HuurCategory> categorien = new ArrayList<>();
     public ArrayList<Integer> npcIDs = new ArrayList<>();
@@ -61,6 +65,7 @@ public final class Main extends JavaPlugin {
         //Events
         Bukkit.getPluginManager().registerEvents(new InvClickEvent(this), this);
         Bukkit.getPluginManager().registerEvents(new NPCRightClick(this), this);
+        Bukkit.getPluginManager().registerEvents(new SendChat(this), this);
 
         //Commands
         getCommand("huur").setExecutor(new HuurCommand(this));
@@ -123,6 +128,7 @@ public final class Main extends JavaPlugin {
             getConfig().set(path + ".dagenTussenBetaling", verhuurdePlot.getDaysbetweenpayment());
             getConfig().set(path + ".heeftBetaald", verhuurdePlot.hasPayed());
             getConfig().set(path + ".gemisteBetalingen", verhuurdePlot.getDaysPaymentMissed());
+            getConfig().set(path + ".categorie", verhuurdePlot.getCategory());
         }
         saveConfig();
         Bukkit.getConsoleSender().sendMessage(prefix + "§aVerhuurde plots opgeslagen");
@@ -143,8 +149,9 @@ public final class Main extends JavaPlugin {
                 int daysBetweenPayment = getConfig().getInt(path + ".dagenTussenBetaling");
                 boolean haspayed = getConfig().getBoolean(path + ".heeftBetaald");
                 int missedpayments = getConfig().getInt(path + ".gemisteBetalingen");
+                String categorie = getConfig().getString(path + ".categorie");
                 // Create RentedPlot objects and add them to your collection
-                VerhuurdePlot verhuurdeplot = new VerhuurdePlot(playerUUID, plotID, lastPaymentDate, price, banknumber, daysBetweenPayment, haspayed, missedpayments);
+                VerhuurdePlot verhuurdeplot = new VerhuurdePlot(playerUUID, plotID, lastPaymentDate, price, banknumber, daysBetweenPayment, haspayed, missedpayments,categorie);
                 verhuurdePlotList.add(verhuurdeplot);
             }
             Bukkit.getConsoleSender().sendMessage(prefix + i + " §aVerhuurde plots geladen");
@@ -173,13 +180,13 @@ public final class Main extends JavaPlugin {
                     if (verhuurdePlot.getDaysPaymentMissed() >= 2) {
                         if (isPlotOwner(verhuurdePlot)) {
                             removePlotMember(verhuurdePlot);
+                            if (playerOnline(verhuurdePlot.getPlayerUUID())) {
+                                Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(errorprefix + "§cJe hebt 2 keer je huur niet betaald voor plot: " + verhuurdePlot.getPlotID());
+                            }
                         }
                         if (debug()) {
                             String playername = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
                             Bukkit.getServer().broadcastMessage(debugprefix + playername + " Heeft 2x niet de huur betaald en is verwijderd als plot eigenaar");
-                        }
-                        if (playerOnline(verhuurdePlot.getPlayerUUID()) && isPlotOwner(verhuurdePlot)) {
-                            Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(errorprefix + "§cJe hebt 2 keer je huur niet betaald voor plot: " + verhuurdePlot.getPlotID());
                         }
                     }
                 } else {
@@ -241,7 +248,7 @@ public final class Main extends JavaPlugin {
                 DefaultDomain owners = region.getOwners();
                 if (owners.contains(verhuurdePlot.getPlayerUUID())) {
                     owners.removePlayer(verhuurdePlot.getPlayerUUID());
-                    region.setOwners(owners);
+                    region.setOwners(null);
                     if (debug()) {
                         String playername = Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName();
                         Bukkit.getServer().broadcastMessage(debugprefix + playername + " Is nu verwijderd als eigenaar aan plot: " + verhuurdePlot.getPlotID());
@@ -297,34 +304,6 @@ public final class Main extends JavaPlugin {
     }
 
 
-    public void addVerhuurdePlot(Player p, UUID playerUUID, String plotID, double price, Integer rekeningnummer, Integer dayBetweenPayment) {
-        if (economy.getBalance(Bukkit.getOfflinePlayer(playerUUID)) < price) {
-            p.sendMessage(errorprefix + "§c§o" + Bukkit.getOfflinePlayer(playerUUID).getName() + " §r§cHeeft nu het geld niet en de huur is niet aangemaakt!");
-            return;
-        }
-        VerhuurdePlot verhuurdePlot = new VerhuurdePlot(playerUUID, plotID, System.currentTimeMillis(), price, rekeningnummer, dayBetweenPayment, false, 0);
-        long nextPaymentDate = System.currentTimeMillis() + TimeUnit.DAYS.toMillis(dayBetweenPayment);
-        Bukkit.getServer().broadcastMessage(String.valueOf(TimeUnit.DAYS.toMillis(dayBetweenPayment))); //########//
-        verhuurdePlotList.add(verhuurdePlot);
-        saveVerhuurdePlots();
-        Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
-        bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
-        addPlotMember(verhuurdePlot);
-        p.sendMessage(prefix + "§bHuur contract toegevoegd met deze info: ");
-        if (economy.getBalance(Bukkit.getOfflinePlayer(playerUUID)) < price) {
-            Bukkit.getPlayer(verhuurdePlot.getPlayerUUID()).sendMessage(errorprefix + "§cJe had niet genoeg geld om de huur te betalen voor plot: " + verhuurdePlot.getPlotID());
-            verhuurdePlot.setDaysPaymentMissed(1);
-        } else {
-            economy.withdrawPlayer(Bukkit.getOfflinePlayer(playerUUID), price);
-            verhuurdePlot.setDaysPaymentMissed(0);
-            Bukkit.getPlayer(playerUUID).sendMessage(prefix + "§bJe hebt " + price + ".- huur betaald voor plot: " + plotID);
-            verhuurdePlot.setPayed(true);
-        }
-        verhuurdePlot.setLastPaymentDate(System.currentTimeMillis());
-        sendPlotInfo(plotID, p);
-
-    }
-
     public void stuurLoadedVerhuurdePlots(Player p) {
         if (verhuurdePlotList.isEmpty()) {
             p.sendMessage(errorprefix + "§cEr zijn geen verhuurde plots geladen");
@@ -342,12 +321,13 @@ public final class Main extends JavaPlugin {
             long minutes = TimeUnit.MILLISECONDS.toMinutes(timeDifferenceMillis) % 60;
             long seconds = TimeUnit.MILLISECONDS.toSeconds(timeDifferenceMillis) % 60;
             String timeRemaining = String.format("%dD:%dH:%dM:%dS", days, hours, minutes, seconds);
+            String category = verhuurdePlot.getCategory();
             if (verhuurdePlot.hasPayed()) {
                 betaald = "Betaald";
-                p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + timeRemaining);
+                p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + timeRemaining + " §b|§c " + category);
             } else {
                 betaald = "Onbetaald";
-                p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + verhuurdePlot.getDaysPaymentMissed() + " §b|§c " + timeRemaining);
+                p.sendMessage("§b- §c" + playernaam + " §b|§c " + verhuurdePlot.getPlotID() + " §b|§c €" + verhuurdePlot.getPrice() + " om de " + verhuurdePlot.getDaysbetweenpayment() + " dagen §b|§c " + betaald + " §b|§c " + verhuurdePlot.getDaysPaymentMissed() + " §b|§c " + timeRemaining + " §b|§c " + category);
             }
         }
     }
@@ -366,8 +346,6 @@ public final class Main extends JavaPlugin {
                 } else {
                     p.sendMessage(prefix + "§6" + plotID + " §aHuur contract niet gevonden");
                 }
-            } else {
-                p.sendMessage(errorprefix + "§cDit is niet een verhuurd plot!");
             }
         }
         verhuurdePlotList.removeAll(plotsToRemove);
@@ -401,8 +379,6 @@ public final class Main extends JavaPlugin {
 
 
                 p.sendMessage("§3Tijd tot volgende betaling: §a" + daysRemaining + " dagen, " + hoursRemaining + " uur, " + minutesRemaining + " minuten, " + secondsRemaining + " seconden");
-            } else {
-                p.sendMessage(errorprefix + "§cDie plot bestaat niet of is niet verhuurd.");
             }
         }
     }
@@ -470,22 +446,19 @@ public final class Main extends JavaPlugin {
     }
 
     public void betaalachterstand(Player p, String playername) {
-        long currentTimeMillis = System.currentTimeMillis();
         Player huurder = Bukkit.getPlayer(playername);
         for (VerhuurdePlot verhuurdePlot : verhuurdePlotList) {
             if (verhuurdePlot.getPlayerUUID().equals(huurder.getUniqueId())) {
                 double price = (((double) verhuurdePlot.getDaysPaymentMissed() /verhuurdePlot.getDaysbetweenpayment()) * verhuurdePlot.getPrice());
                 if (economy.getBalance(Bukkit.getOfflinePlayer(playername)) >= price) {
-                    if (verhuurdePlot.getDaysPaymentMissed() >= 2) {
-                        if (!isPlotOwner(verhuurdePlot)) {
-                            laatBetalerList.put(huurder.getUniqueId(),p.getUniqueId());
-                            p.sendMessage(prefix+"§aDe speler moet nu de achterstands betaling bevestigen");
-                            p.sendMessage(prefix+"§aDe extra kosten zijn: §b" + price + ",-");
-                            TextComponent message = new TextComponent(prefix+"§3Klik hier om de huur betaling te bevestigen");
-                            message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/huur bevestig"));
-                            message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§aBevestig huur betaling prijs: §b" + price + ",-").create()));
-                            huurder.spigot().sendMessage(message);
-                        }
+                    if (verhuurdePlot.getDaysPaymentMissed() >= 1) {
+                        laatBetalerList.put(huurder.getUniqueId(), p.getUniqueId());
+                        p.sendMessage(prefix + "§aDe speler moet nu de achterstands betaling bevestigen");
+                        p.sendMessage(prefix + "§aDe extra kosten zijn: §b" + price + ",-");
+                        TextComponent message = new TextComponent(prefix + "§3Klik hier om de huur betaling te bevestigen");
+                        message.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/huur bevestig"));
+                        message.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ComponentBuilder("§aBevestig huur betaling prijs: §b" + price + ",-").create()));
+                        huurder.spigot().sendMessage(message);
                     } else {
                         p.sendMessage(errorprefix + "§cDe huurder is nog steeds eigenaar en heeft geen achterstand");
                     }
@@ -539,14 +512,38 @@ public final class Main extends JavaPlugin {
         CategorienConfig.save();
     }
 
+    public void initializeHuur(Player p, VerhuurdePlot verhuurdePlot){
+        p.closeInventory();
+        if(economy.getBalance(p) < verhuurdePlot.getPrice()){
+            p.sendMessage(errorprefix + "§cJe hebt het geld nu niet om te betalen!");
+            removeFromConfirmingMap(p);
+            return;
+        }
 
-    public boolean moetconfirmen(Player p){
-        if(laatBetalerList.isEmpty()){
-            return false;
+        Double price = verhuurdePlot.getPrice();
+        verhuurdePlotList.add(verhuurdePlot);
+        saveVerhuurdePlots();
+        Bankaccount bankaccount = nl.minetopiasdb.api.banking.BankUtils.getInstance().getBankAccount(verhuurdePlot.getBanknumber());
+        bankaccount.setBalance(verhuurdePlot.getPrice() + bankaccount.getBalance());
+        addPlotMember(verhuurdePlot);
+        p.sendMessage(prefix + "§bHuur contract toegevoegd met deze info: ");
+        economy.withdrawPlayer(p, price);
+        verhuurdePlot.setDaysPaymentMissed(0);
+        p.sendMessage(prefix + "§bJe hebt " + price + ".- huur betaald voor plot: " + verhuurdePlot.getPlotID());
+        verhuurdePlot.setPayed(true);
+        verhuurdePlot.setLastPaymentDate(System.currentTimeMillis());
+        sendPlotInfo(verhuurdePlot.getPlotID(), p);
+        removeFromConfirmingMap(p);
+    }
+
+    private void removeFromConfirmingMap(Player p){
+        Iterator<Map.Entry<UUID, VerhuurdePlot>> iterator = confirmhuurcontract.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<UUID, VerhuurdePlot> entry = iterator.next();
+            if (entry.getKey().equals(p.getUniqueId())) {
+                iterator.remove();
+                break;
+            }
         }
-        if(laatBetalerList.containsKey(p.getUniqueId())){
-            return  true;
-        }
-        return false;
     }
 }

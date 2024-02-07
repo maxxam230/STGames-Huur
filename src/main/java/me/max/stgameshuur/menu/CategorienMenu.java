@@ -29,7 +29,7 @@ public class CategorienMenu {
         ArrayList<ItemStack> allcategorien = new ArrayList<>();
 
         for(String cat : categorien){
-            if(p.hasPermission("stgames.huur.categorie." + cat)) {
+            if(p.hasPermission("stgames.categorie." + cat)) {
                 allcategorien.add(nit(cat));
             }
         }

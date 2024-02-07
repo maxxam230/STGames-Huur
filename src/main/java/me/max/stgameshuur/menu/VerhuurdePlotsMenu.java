@@ -4,10 +4,12 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.util.Location;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.managers.RegionManager;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.arcaniax.hdb.api.HeadDatabaseAPI;
 import me.max.stgameshuur.configs.SpelerverhuurplotsConfig;
 import me.max.stgameshuur.menu.utils.PageUtil;
+import me.max.stgameshuur.objects.VerhuurdePlot;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -22,22 +24,24 @@ import java.util.List;
 
 public class VerhuurdePlotsMenu {
 
-    public VerhuurdePlotsMenu(ArrayList<String> plotsondercat, Player p, String categorie){
+    public VerhuurdePlotsMenu(List<VerhuurdePlot> verhuurdePlotArrayList,Player p, String categorie){
 
         int page = 1;
         int spaces = 45;
 
         ArrayList<ItemStack> alleplots = new ArrayList<>();
 
-        Inventory inv = Bukkit.createInventory(null,54,"§6Plots onder categorie §7§o- §r§7" + categorie);
+        Inventory inv = Bukkit.createInventory(null,54,"§6Plots onder §7§o- §r§7" + categorie);
 
         if(categorie.isEmpty()){
             p.openInventory(inv);
             return;
         }
 
-        for(String cat : plotsondercat) {
-            alleplots.add(nit(Material.NAME_TAG, cat, 173, null));
+        for(VerhuurdePlot verhuurdePlot : verhuurdePlotArrayList){
+            if(verhuurdePlot.getCategory().equals(categorie)){
+                alleplots.add(huuritem(verhuurdePlot));
+            }
         }
 
         if(p.hasPermission("stgames.categorie."+categorie+".add")){
@@ -80,13 +84,27 @@ public class VerhuurdePlotsMenu {
         p.openInventory(inv);
     }
 
-
-    private Inventory emptyPage(String categorie){
-        Inventory inv = Bukkit.createInventory(null,54,"§6Verhuurdeplots §7§o- §r§7" + categorie);
-        inv.setItem(45,nit(Material.BARRIER,"§c§LLeft", 0,null));
-        inv.setItem(49,nit(Material.RABBIT_FOOT, "§a§lAdd Huur",173,categorie));
-        inv.setItem(53,nit(Material.BARRIER,"§c§LLeft", 0,null));
-        return inv;
+    private ItemStack huuritem(VerhuurdePlot verhuurdePlot){
+        List<String> lore = new ArrayList<>();
+        ItemStack item = new ItemStack(Material.BARRIER);
+        Integer daysPaymentMissed = verhuurdePlot.getDaysPaymentMissed();
+        if(daysPaymentMissed == 0){
+            item = new ItemStack(Material.LIME_SHULKER_BOX);
+        } else if(daysPaymentMissed == 1){
+            item = new ItemStack(Material.ORANGE_SHULKER_BOX);
+        } else if(daysPaymentMissed >= 2){
+            item = new ItemStack(Material.RED_SHULKER_BOX);
+        }
+        lore.add("§bHuurder: §6" + Bukkit.getOfflinePlayer(verhuurdePlot.getPlayerUUID()).getName());
+        lore.add("§bPlot: §6" + verhuurdePlot.getPlotID());
+        lore.add("§bPrijs: §6€" + verhuurdePlot.getPrice()+ ",-");
+        lore.add("§bDagen: §6" + verhuurdePlot.getDaysbetweenpayment());
+        lore.add("§bHeeft Betaald: §6" + verhuurdePlot.hasPayed());
+        ItemMeta itemm = item.getItemMeta();
+        itemm.setLore(lore);
+        itemm.setDisplayName("§b"+verhuurdePlot.getPlotID());
+        item.setItemMeta(itemm);
+        return item;
     }
 
     private ItemStack nit(Material mat, String name, int modeldata, String localizedname){
@@ -111,7 +129,7 @@ public class VerhuurdePlotsMenu {
         if (regionManager.getRegions().isEmpty()) {
             return null;
         }
-        for (com.sk89q.worldguard.protection.regions.ProtectedRegion region : regionManager.getRegions().values()) {
+        for (ProtectedRegion region : regionManager.getRegions().values()) {
             list.add(region.getId());
         }
         return list;

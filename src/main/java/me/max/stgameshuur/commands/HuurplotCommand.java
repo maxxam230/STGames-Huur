@@ -103,11 +103,7 @@ public class HuurplotCommand implements TabExecutor {
                 } else {
                     p.sendMessage(errorprefix + "§cDeze spelers heeft geen plots die hij kan verhuren!");
                 }
-
             }
-
-
-
         }
 
     return false;

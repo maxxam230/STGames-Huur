@@ -14,7 +14,7 @@ public class VerhuurdePlot {
         private String category;
 
 
-        public VerhuurdePlot(UUID playerUUID, String plotID, long lastPaymentDate, double price, int banknumber, int daysbetweenpayment, boolean payed, int dayspaymentmissed) {
+        public VerhuurdePlot(UUID playerUUID, String plotID, long lastPaymentDate, double price, int banknumber, int daysbetweenpayment, boolean payed, int dayspaymentmissed, String category) {
             this.playerUUID = playerUUID;
             this.plotID = plotID;
             this.lastPaymentDate = lastPaymentDate;
@@ -70,5 +70,13 @@ public class VerhuurdePlot {
 
     public void setDaysPaymentMissed(int daysPaymentMissed) {
         this.daysPaymentMissed = daysPaymentMissed;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setPrice(double price) {
+        this.price = price;
     }
 }

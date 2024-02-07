@@ -30,6 +30,7 @@ public class AddVerhuurPlot {
     }
 
     public String getHuurder() {
+        if(huurder == null){return null;}
         return huurder;
     }
 
@@ -38,6 +39,7 @@ public class AddVerhuurPlot {
     }
 
     public String getCategorie() {
+        if(categorie == null){return null;}
         return categorie;
     }
 
@@ -46,6 +48,7 @@ public class AddVerhuurPlot {
     }
 
     public String getPlot() {
+        if(plot == null){return null;}
         return plot;
     }
 
@@ -54,6 +57,7 @@ public class AddVerhuurPlot {
     }
 
     public Integer getPrijs() {
+        if(prijs == null){return null;}
         return prijs;
     }
 
@@ -62,6 +66,7 @@ public class AddVerhuurPlot {
     }
 
     public Integer getDagen() {
+        if(dagen == null){return null;}
         return dagen;
     }
 

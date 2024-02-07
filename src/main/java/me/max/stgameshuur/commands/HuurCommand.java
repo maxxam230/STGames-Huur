@@ -9,6 +9,7 @@ import com.sk89q.worldguard.protection.regions.RegionContainer;
 import me.max.stgameshuur.Main;
 import me.max.stgameshuur.configs.CategorienConfig;
 import me.max.stgameshuur.menu.CategorienMenu;
+import me.max.stgameshuur.menu.ConfirmContractMenu;
 import net.citizensnpcs.api.CitizensAPI;
 import net.citizensnpcs.api.npc.NPC;
 import net.citizensnpcs.api.npc.NPCDataStore;
@@ -57,47 +58,15 @@ public class HuurCommand implements TabExecutor {
                         helpmenu(p);
                         return true;
                     }
-                    if (args[0].equalsIgnoreCase("add")) {
-                        if (p.hasPermission("stgames.huur.add")) {
-                            if (args.length != 6) {
-                                p.sendMessage("§b/huur add [speler] [plot] [bedrag] [dagen] [rekening-ID]");
-                                return true;
-                            }
-                            if (Bukkit.getPlayer(args[1]) != null && Bukkit.getPlayer(args[1]).isOnline()) {
-                                UUID playerUUID = Bukkit.getPlayer(args[1]).getUniqueId();
-                                if (plugin.getConfig().contains(".verhuurdePlots." + args[2])) {
-                                    p.sendMessage(errorprefix + "§cDit plot is al verhuurd!");
-                                    return true;
-                                }
-                                if (Integer.parseInt(args[4]) == 0) {
-                                    p.sendMessage(errorprefix + "§cDe dagen tussen betalingen kan niet 0 zijn!");
-                                    return true;
-                                }
-                                plugin.addVerhuurdePlot(p, playerUUID, args[2], Double.parseDouble(args[3]), Integer.parseInt(args[5]), Integer.parseInt(args[4]));
-                            } else {
-                                p.sendMessage(errorprefix + "§cSpeler is niet online");
-                            }
-                        } else {
-                            p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
-                        }
-                    } else if (args[0].equalsIgnoreCase("list")) {
+
+                    if (args[0].equalsIgnoreCase("list")) {
                         if (p.hasPermission("stgames.huur.add")) {
                             plugin.stuurLoadedVerhuurdePlots(p);
                         } else {
                             p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
                         }
-                    } else if (args[0].equalsIgnoreCase("remove")) {
-                        if (p.hasPermission("stgames.huur.add")) {
-                            if (args.length != 2) {
-                                p.sendMessage("§b/huur remove [plot-ID]");
-                                return true;
-                            }
-                            plugin.removeVerhuurdePlot(p, args[1]);
-                        } else {
-                            p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
-                        }
                     } else if (args[0].equalsIgnoreCase("timeremaining")) {
-                        if (p.hasPermission("stgames.huur.add")) {
+                        if (p.hasPermission("stgames.huur.timeremaining")) {
                             plugin.showTimeRemaining(p);
                         } else {
                             p.sendMessage(errorprefix + "§cJe hebt hier geen permissie voor!");
@@ -127,27 +96,13 @@ public class HuurCommand implements TabExecutor {
                         if (p.isOp()) {
                             plugin.huurbetaalforce();
                         }
-                    } else if (args[0].equalsIgnoreCase("vraaghuur")){
-                        if(p.hasPermission("stgames.huur.vraaghuur")){
-                            if(args.length < 2){
-                                p.sendMessage(errorprefix+"§c/huur vraaghuur [speler]");
-                                return true;
-                            }
-                            if(args[1].equalsIgnoreCase(p.getName())){
-                                p.sendMessage(errorprefix + "§cJe kan niet jezelf huur laten betalen");
-                                return true;
-                            }
-                            if (Bukkit.getPlayer(args[1]) != null && Bukkit.getPlayer(args[1]).isOnline()) {
-                                plugin.betaalachterstand(p,args[1]);
-                            } else {
-                                p.sendMessage(errorprefix + "§cDeze speler bestaat niet of is niet online");
-                            }
-                        } else {
-                            p.sendMessage(errorprefix+"§cJe hebt hiet geen permissie voor!");
-                        }
                     } else if(args[0].equalsIgnoreCase("bevestig")){
-                        if(moetconfirmen(p)){
-                            plugin.confirmedbetaalachterstand(p);
+                        if(plugin.laatBetalerList.containsKey(p.getUniqueId())){
+                            plugin.confirmedbetaalachterstand((Player) Bukkit.getOfflinePlayer(p.getUniqueId()));
+                            return true;
+                        }
+                        if(plugin.confirmhuurcontract.containsKey(p.getUniqueId())){
+                            new ConfirmContractMenu(p,plugin.confirmhuurcontract.get(p.getUniqueId()));
                         } else {
                             p.sendMessage(errorprefix+"§cJe hebt niks om te bevestigen");
                         }
@@ -195,23 +150,16 @@ public class HuurCommand implements TabExecutor {
         return false;
     }
 
-    public boolean moetconfirmen(Player p){
-        return plugin.moetconfirmen(p);
-    }
-
 
     public void helpmenu(Player p) {
         p.sendMessage(prefix);
         p.sendMessage("§b/huur npc add/remove [NPC-ID]");
-        p.sendMessage("§b/huur add [speler] [plot] [bedrag] [dagen] [rekening-ID]");
-        p.sendMessage("§b/huur remove [plot-ID]");
         p.sendMessage("§b/huur info [plot-ID]");
         p.sendMessage("§b/huur timeremaining");
         p.sendMessage("§b/huur list");
-        p.sendMessage("§b/huur vraaghuur [speler]");
         p.sendMessage("§b/huur debug §8§o(gebruik dit alleen om te testen)");
         p.sendMessage("§b/huur forcepay §8§o(gebruik dit alleen om te testen)");
-        p.sendMessage("§b/huur bevestig §8§o(kan alleen als je meer dan 2 dagen gemist hebt)");
+        p.sendMessage("§b/huur bevestig §8§o(voor laatbetalingen en contract tekenen)");
     }
 
     @Override
@@ -222,15 +170,6 @@ public class HuurCommand implements TabExecutor {
             if(p.hasPermission("stgames.huur.npc")){
                 list.add("npc");
             }
-            if(p.hasPermission("stgames.huur.add")){
-                list.add("add");
-            }
-            if(p.hasPermission("stgames.huur.info")){
-                list.add("maakcategorie");
-            }
-            if(p.hasPermission("stgames.huur.remove")){
-                list.add("remove");
-            }
             if(p.hasPermission("stgames.huur.info")){
                 list.add("info");
             }
@@ -239,9 +178,6 @@ public class HuurCommand implements TabExecutor {
             }
             if(p.hasPermission("stgames.huur.list")){
                 list.add("list");
-            }
-            if(p.hasPermission("stgames.huur.vraaghuur")){
-                list.add("vraaghuur");
             }
             return list;
         }
@@ -253,37 +189,9 @@ public class HuurCommand implements TabExecutor {
                 return list;
             }
         }
-        if(args[0].equalsIgnoreCase("add")) {
-            if (args.length == 2) {
-                List<String> list = new ArrayList<>();
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    list.add(player.getName());
-                }
-                return list;
-            }
-            if (args.length == 3) {
-                return plotsinworld(p);
-            }
 
-            if (args.length == 4) {
-                return Collections.singletonList("bedrag");
-            }
 
-            if (args.length == 5) {
-                return Collections.singletonList("dagen");
-            }
-
-            if (args.length == 6) {
-                List<Bankaccount> accounts = nl.minetopiasdb.api.banking.BankUtils.getInstance().getAccounts(BankAccountType.GOVERNMENT);
-                List<String> accountnmbrs = new ArrayList<>();
-                for (Bankaccount account : accounts) {
-                    accountnmbrs.add(String.valueOf(account.getId()));
-                }
-                return accountnmbrs;
-            }
-        } else if(args[0].equalsIgnoreCase("remove")){
-            return plugin.returnLoadedVerhuurdePlots();
-        } else if(args[0].equalsIgnoreCase("info")){
+        if(args[0].equalsIgnoreCase("info")){
             return plugin.returnLoadedVerhuurdePlots();
         } else if(args[0].equalsIgnoreCase("vraaghuur")){
             return onlinespeler();
@@ -297,32 +205,6 @@ public class HuurCommand implements TabExecutor {
         for(Player p : Bukkit.getOnlinePlayers()){
             list.add(p.getName());
         }
-        return list;
-    }
-
-    public List<String> plotsinworld(Player p){
-        List<String> list = new ArrayList<>();
-        World world = p.getWorld();
-        Location loc = BukkitAdapter.adapt(p.getLocation());
-        RegionContainer container = WorldGuard.getInstance().getPlatform().getRegionContainer();
-        RegionManager regionManager = container.get(BukkitAdapter.adapt(world));
-        if (regionManager.getRegions().isEmpty()) {
-            return null;
-        }
-        for (com.sk89q.worldguard.protection.regions.ProtectedRegion region : regionManager.getRegions().values()) {
-            if(region.getOwners().contains(p.getUniqueId())){
-                list.add(region.getId());
-            }
-        }
-        return list;
-    }
-
-    public List<String> verhuurdeplots(Player p){
-        List<String> list = new ArrayList<>();
-        if(plugin.getConfig().getStringList(".verhuurdeplots").isEmpty()){
-            return null;
-        }
-        list.addAll(plugin.getConfig().getConfigurationSection(".verhuurdePlots").getKeys(false));
         return list;
     }
 }

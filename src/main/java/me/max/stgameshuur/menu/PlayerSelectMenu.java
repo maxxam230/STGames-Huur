@@ -3,6 +3,7 @@ package me.max.stgameshuur.menu;
 import me.arcaniax.hdb.api.HeadDatabaseAPI;
 import me.max.stgameshuur.Main;
 import me.max.stgameshuur.menu.utils.PageUtil;
+import me.max.stgameshuur.objects.VerhuurdePlot;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -13,23 +14,26 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class PlayerSelectMenu {
 
     private final String prefix = Main.prefix;
     private final String errorprefix = Main.errorprefix;
 
-    public PlayerSelectMenu(Player p, int page, String plotname){
+    public PlayerSelectMenu(Player p, int page){
 
         int spaces = 45;
 
         ArrayList<ItemStack> allOnlinePlayers = new ArrayList<>();
 
         for(Player allp : Bukkit.getOnlinePlayers()){
-            allOnlinePlayers.add(nit(allp.getName()));
+            if(!allp.getName().equals(p.getName())) {
+                allOnlinePlayers.add(nit(allp.getName()));
+            }
         }
 
-        Inventory inv = Bukkit.createInventory(null,54,"§6Kies speler voor plot: §7§o- " + page);
+        Inventory inv = Bukkit.createInventory(null,54,"§6Kies speler voor huurcontract");
 
         ItemStack left;
         ItemMeta leftMeta;
@@ -71,7 +75,7 @@ public class PlayerSelectMenu {
         ItemStack item = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta itemm = (SkullMeta) item.getItemMeta();
         itemm.setOwningPlayer(Bukkit.getOfflinePlayer(name));
-        itemm.setDisplayName("§b§l"+name);
+        itemm.setDisplayName("§3"+name);
         item.setItemMeta(itemm);
         return item;
     }
